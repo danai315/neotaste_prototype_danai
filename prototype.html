@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>NeoTaste Prototype</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  background:#d1d5db;min-height:100vh;
+  display:flex;justify-content:center;align-items:flex-start;
+  padding:32px 0 64px;
+  font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+#root{width:390px;position:relative;}
+
+.phone{
+  width:390px;min-height:844px;background:#fff;
+  border-radius:44px;
+  box-shadow:0 0 0 10px #1a1a1a,0 0 0 12px #3a3a3a,0 32px 80px rgba(0,0,0,.4);
+  overflow:hidden;display:flex;flex-direction:column;position:relative;
+}
+.status-bar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 28px 0;flex-shrink:0;
+}
+.status-time{font-size:15px;font-weight:700;letter-spacing:-0.3px;}
+.status-icons{display:flex;align-items:center;gap:5px;}
+.scroll{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;
+}
+.scroll::-webkit-scrollbar{display:none;}
+
+:root{
+  --green:#4ADE80;--dk:#1a3a1a;
+  --amber:#E8C44A;--amber-b:#EF9F27;--amber-bg:#FAEEDA;
+  --ink:#0A0A0A;--ink2:rgba(0,0,0,.55);--surf:#F5F5F5;--bdr:rgba(0,0,0,.10);
+}
+.h1{font-size:30px;font-weight:800;color:var(--ink);line-height:1.15;letter-spacing:-0.5px;}
+.body{font-size:16px;line-height:1.65;color:var(--ink2);}
+.btn{
+  width:100%;padding:16px;border:none;border-radius:9999px;
+  font-size:16px;font-weight:700;cursor:pointer;text-align:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:active{opacity:.82;}
+.btn-green{background:var(--green);color:var(--dk);}
+.btn-dark{background:var(--dk);color:#fff;}
+.btn-ghost{
+  background:transparent;color:var(--ink2);font-size:15px;font-weight:500;
+  border:none;cursor:pointer;padding:13px;width:100%;text-align:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-ghost:active{opacity:.6;}
+.back{
+  width:40px;height:40px;border-radius:50%;background:var(--surf);
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;-webkit-tap-highlight-color:transparent;
+}
+.back:active{background:#e5e5e5;}
+.badge-amber{
+  display:inline-flex;align-items:center;gap:5px;padding:6px 13px;
+  border-radius:9999px;background:var(--amber-bg);border:1px solid var(--amber-b);
+  font-size:13px;font-weight:700;color:#8a5c0a;
+}
+.amber-banner{
+  background:var(--amber-bg);border:1px solid var(--amber-b);border-radius:12px;
+  padding:13px 15px;font-size:14px;font-weight:500;color:#7a4f0e;line-height:1.5;
+}
+.card-amber{background:#fff;border:1.5px solid var(--amber-b);border-radius:14px;overflow:hidden;}
+.div{height:1px;background:var(--bdr);margin:16px 0;}
+.chip{
+  padding:7px 14px;border-radius:9999px;font-size:13px;font-weight:600;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+  border:1px solid var(--bdr);background:#fff;color:var(--ink);
+}
+.chip:active{opacity:.7;}
+.chip-amber{background:var(--amber-bg);color:#8a5c0a;border:1.5px solid var(--amber-b);cursor:default;}
+.chip-row{display:flex;flex-wrap:wrap;gap:7px;}
+.stars{color:var(--dk);font-size:16px;letter-spacing:1px;}
+.stat-track{height:5px;background:#e5e5e5;border-radius:3px;margin-top:5px;}
+.stat-fill{height:100%;border-radius:3px;background:var(--green);}
+
+/* Map styles */
+.map-bg{
+  flex:1;position:relative;overflow:hidden;
+  background:#e8ede8;
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 63px,rgba(255,255,255,.7) 63px,rgba(255,255,255,.7) 65px),
+    repeating-linear-gradient(90deg,transparent,transparent 83px,rgba(255,255,255,.7) 83px,rgba(255,255,255,.7) 85px);
+}
+.map-road-h{
+  position:absolute;left:0;right:0;height:3px;
+  background:rgba(255,255,255,.55);
+}
+.map-road-v{
+  position:absolute;top:0;bottom:0;width:3px;
+  background:rgba(255,255,255,.55);
+}
+/* Pulse ring */
+@keyframes pulseRing{
+  0%{transform:scale(1);opacity:.8;}
+  70%{transform:scale(2.8);opacity:0;}
+  100%{transform:scale(2.8);opacity:0;}
+}
+.pulse-ring{
+  position:absolute;
+  width:28px;height:28px;border-radius:50%;
+  border:2.5px solid var(--amber-b);
+  animation:pulseRing 1.6s ease-out 0.3s 1 forwards;
+  opacity:0;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  pointer-events:none;
+}
+/* Tab bar */
+.tab-bar{
+  display:flex;border-top:1px solid rgba(0,0,0,.08);
+  background:#fff;padding:8px 0 22px;flex-shrink:0;
+}
+.tab-item{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;gap:3px;cursor:pointer;
+}
+.tab-label{font-size:10px;font-weight:500;color:#a3a3a3;}
+.tab-label.active{color:#1a3a1a;font-weight:700;}
+
+/* Champagne */
+@keyframes clinkL{
+  0%{transform:translateX(0) rotate(0deg);}
+  40%{transform:translateX(14px) rotate(8deg);}
+  60%{transform:translateX(12px) rotate(6deg);}
+  80%{transform:translateX(4px) rotate(2deg);}
+  100%{transform:translateX(0) rotate(0deg);}
+}
+@keyframes clinkR{
+  0%{transform:translateX(0) rotate(0deg);}
+  40%{transform:translateX(-14px) rotate(-8deg);}
+  60%{transform:translateX(-12px) rotate(-6deg);}
+  80%{transform:translateX(-4px) rotate(-2deg);}
+  100%{transform:translateX(0) rotate(0deg);}
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(12px);}
+  to{opacity:1;transform:translateY(0);}
+}
+@keyframes sparkle{
+  0%,100%{opacity:0;transform:scale(0);}
+  50%{opacity:1;transform:scale(1);}
+}
+.glass-l{display:inline-block;animation:clinkL 1.4s ease forwards;}
+.glass-r{display:inline-block;animation:clinkR 1.4s ease forwards;}
+.fade-line1{opacity:0;animation:fadeUp .7s ease forwards;animation-delay:1.2s;}
+.fade-line2{opacity:0;animation:fadeUp .7s ease forwards;animation-delay:1.7s;}
+.sparkle{position:absolute;font-size:14px;animation:sparkle 1.2s ease forwards;}
+
+/* Tooltip fade */
+@keyframes tooltipFade{
+  0%{opacity:0;transform:translateY(4px);}
+  15%{opacity:1;transform:translateY(0);}
+  75%{opacity:1;}
+  100%{opacity:0;}
+}
+
+/* Nav dots */
+.nav-dots{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  display:flex;gap:5px;align-items:center;
+  background:rgba(0,0,0,.55);padding:7px 12px;
+  border-radius:9999px;z-index:9999;
+}
+.dot{
+  width:8px;height:8px;border-radius:50%;
+  background:rgba(255,255,255,.35);
+  cursor:pointer;border:none;padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.dot.on{background:#4ADE80;width:20px;border-radius:4px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const {useState,useEffect,useRef}=React;
+
+/* ── SHARED ───────────────────────────────────────────── */
+function StatusBar({light}){
+  const c=light?'#fff':'#0A0A0A';
+  return(
+    <div className="status-bar" style={{color:c}}>
+      <span className="status-time">9:41</span>
+      <div className="status-icons">
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+          <rect x="0" y="4" width="3" height="8" rx="1" fill={light?'rgba(255,255,255,.5)':'rgba(0,0,0,.3)'}/>
+          <rect x="4.5" y="2.5" width="3" height="9.5" rx="1" fill={light?'rgba(255,255,255,.7)':'rgba(0,0,0,.5)'}/>
+          <rect x="9" y="0.5" width="3" height="11.5" rx="1" fill={light?'#fff':'#0A0A0A'}/>
+          <rect x="13.5" y="0.5" width="3" height="11.5" rx="1" fill={light?'#fff':'#0A0A0A'}/>
+        </svg>
+        <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+          <path d="M8 2.5C10.5 2.5 12.7 3.5 14.2 5.2L15.5 3.8C13.6 1.7 10.9 0.5 8 0.5C5.1 0.5 2.4 1.7 0.5 3.8L1.8 5.2C3.3 3.5 5.5 2.5 8 2.5Z" fill={light?'#fff':'#0A0A0A'}/>
+          <path d="M8 5.5C9.8 5.5 11.4 6.2 12.6 7.4L13.9 6C12.3 4.4 10.3 3.5 8 3.5C5.7 3.5 3.7 4.4 2.1 6L3.4 7.4C4.6 6.2 6.2 5.5 8 5.5Z" fill={light?'#fff':'#0A0A0A'}/>
+          <circle cx="8" cy="10.5" r="1.5" fill={light?'#fff':'#0A0A0A'}/>
+        </svg>
+        <div style={{display:'flex',alignItems:'center',gap:2}}>
+          <div style={{
+            width:23,height:11,
+            border:`1.5px solid ${light?'rgba(255,255,255,.6)':'rgba(0,0,0,.35)'}`,
+            borderRadius:3,display:'flex',alignItems:'center',padding:'1.5px'
+          }}>
+            <div style={{width:'70%',height:'100%',background:light?'#fff':'#0A0A0A',borderRadius:1.5}}/>
+          </div>
+          <div style={{width:2,height:6,background:light?'rgba(255,255,255,.5)':'rgba(0,0,0,.3)',borderRadius:1}}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BackBtn({onClick}){
+  return(
+    <button className="back" onClick={onClick}>
+      <svg width="10" height="17" viewBox="0 0 10 17" fill="none">
+        <path d="M9 1L1 8.5L9 16" stroke="#0A0A0A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </button>
+  );
+}
+
+function AmberBadge(){
+  return(
+    <span className="badge-amber">
+      <CrownIcon/> Critic mission
+    </span>
+  );
+}
+
+function CrownIcon({size=13}){
+  return(
+    <svg width={size} height={Math.round(size*0.85)} viewBox="0 0 13 11" fill="none">
+      <path d="M6.5 0L8.5 4H13L9.5 6.5L11 11L6.5 8L2 11L3.5 6.5L0 4H4.5L6.5 0Z" fill="#E8C44A"/>
+    </svg>
+  );
+}
+
+/* Standard map pin (dark green, white N) */
+function StdPin(){
+  return(
+    <svg width="22" height="30" viewBox="0 0 22 30" fill="none" style={{display:'block'}}>
+      <path d="M11 0C4.9 0 0 4.9 0 11C0 19.3 11 30 11 30C11 30 22 19.3 22 11C22 4.9 17.1 0 11 0Z" fill="#1a3a1a"/>
+      <circle cx="11" cy="11" r="6" fill="rgba(255,255,255,.15)"/>
+      <text x="11" y="15" textAnchor="middle" fill="white" fontSize="10" fontWeight="800" fontFamily="-apple-system,sans-serif">N</text>
+    </svg>
+  );
+}
+
+/* Critic pin (amber, crown above, dark N) */
+function CriticPin({pulse=false}){
+  return(
+    <div style={{position:'relative',display:'inline-flex',flexDirection:'column',alignItems:'center'}}>
+      {pulse && <div className="pulse-ring" style={{top:'auto',bottom:2,left:'50%',transform:'translateX(-50%)',width:24,height:24,borderRadius:'50%',position:'absolute'}}/>}
+      {/* Crown above */}
+      <svg width="14" height="10" viewBox="0 0 14 10" fill="none" style={{marginBottom:-1,display:'block'}}>
+        <path d="M7 0L9 4H14L10.5 6.5L12 10L7 7L2 10L3.5 6.5L0 4H5L7 0Z" fill="#E8C44A"/>
+      </svg>
+      {/* Teardrop */}
+      <svg width="26" height="34" viewBox="0 0 26 34" fill="none" style={{display:'block'}}>
+        <path d="M13 0C5.8 0 0 5.8 0 13C0 22.8 13 34 13 34C13 34 26 22.8 26 13C26 5.8 20.2 0 13 0Z" fill="#E8C44A" stroke="#EF9F27" strokeWidth="1.5"/>
+        <circle cx="13" cy="13" r="6.5" fill="rgba(255,255,255,.25)"/>
+        <text x="13" y="17" textAnchor="middle" fill="#1a3a1a" fontSize="11" fontWeight="800" fontFamily="-apple-system,sans-serif">N</text>
+      </svg>
+    </div>
+  );
+}
+
+function MapTabBar(){
+  const tabs=[
+    {icon:'🏠',label:'Home'},
+    {icon:'📰',label:'Feed'},
+    {icon:'🔍',label:'Discover',active:true},
+    {icon:'📅',label:'Bookings'},
+    {icon:'👤',label:'Profile'},
+  ];
+  return(
+    <div className="tab-bar">
+      {tabs.map(t=>(
+        <div key={t.label} className="tab-item">
+          <span style={{fontSize:20}}>{t.icon}</span>
+          <span className={`tab-label ${t.active?'active':''}`}>{t.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── SCREEN 1 — Hafla Hafla ───────────────────────────── */
+function S1({go}){
+  return(
+    <div className="phone">
+      <StatusBar/>
+      <div className="scroll">
+
+        {/* Hero */}
+        <div style={{
+          width:'100%',height:200,flexShrink:0,
+          background:'linear-gradient(135deg,#D4895A,#B86A35)',
+          display:'flex',alignItems:'center',justifyContent:'center',fontSize:72
+        }}>🥘</div>
+
+        {/* Header */}
+        <div style={{padding:'16px 20px 0'}}>
+          <h1 style={{fontSize:24,fontWeight:800,color:'#0A0A0A',marginBottom:7}}>Hafla Hafla</h1>
+          <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:10}}>
+            <span style={{color:'#1a3a1a',fontSize:15,letterSpacing:1}}>★★★★</span>
+            <span style={{fontSize:13,color:'rgba(0,0,0,.4)'}}>½</span>
+            <span style={{fontSize:14,fontWeight:700,color:'#0A0A0A'}}>4.5</span>
+            <span style={{fontSize:13,color:'rgba(0,0,0,.4)'}}>(124 reviews)</span>
+          </div>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:4}}>
+            {['🧆 Middle Eastern','🍹 Drinks'].map(t=>(
+              <span key={t} style={{
+                fontSize:12,fontWeight:600,padding:'4px 10px',
+                borderRadius:9999,background:'rgba(0,0,0,.07)',color:'#525252'
+              }}>{t}</span>
+            ))}
+            <span style={{
+              fontSize:12,fontWeight:700,padding:'4px 10px',borderRadius:9999,
+              background:'#edfaf3',color:'#166534',border:'1px solid rgba(74,222,128,.35)'
+            }}>● Open now</span>
+            <span style={{
+              fontSize:12,fontWeight:600,padding:'4px 10px',
+              borderRadius:9999,background:'rgba(0,0,0,.07)',color:'#525252'
+            }}>📍 1.3km</span>
+          </div>
+        </div>
+
+        <div className="div" style={{margin:'14px 20px'}}/>
+
+        {/* Deals */}
+        <div style={{padding:'0 20px'}}>
+          <div style={{fontSize:17,fontWeight:700,color:'#0A0A0A',marginBottom:12}}>Deals</div>
+          <div style={{background:'#1a3a1a',borderRadius:14,padding:'16px',marginBottom:4}}>
+            <div style={{fontSize:15,fontWeight:700,color:'#fff',marginBottom:3}}>2for1 Main Item</div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,.55)',marginBottom:14,lineHeight:1.45}}>
+              Two main dishes for the price of one. Valid any day.
+            </div>
+            <button className="btn btn-green" onClick={e=>{e.stopPropagation();go(2);}}>
+              Book deal
+            </button>
+          </div>
+        </div>
+
+        <div className="div" style={{margin:'16px 20px'}}/>
+
+        {/* Reviews */}
+        <div style={{padding:'0 20px'}}>
+          <div style={{fontSize:17,fontWeight:700,color:'#0A0A0A',marginBottom:12}}>Reviews</div>
+
+          {/* 89% stat */}
+          <div style={{
+            background:'#F5F5F5',borderRadius:12,padding:'13px 15px',
+            marginBottom:12,display:'flex',alignItems:'center',gap:16
+          }}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A',marginBottom:5}}>Would go back</div>
+              <div className="stat-track"><div className="stat-fill" style={{width:'89%'}}/></div>
+            </div>
+            <div style={{fontSize:22,fontWeight:800,color:'#1a3a1a',flexShrink:0}}>89%</div>
+          </div>
+
+          {/* Critic signal */}
+          <div className="card-amber" style={{marginBottom:12}}>
+            <div style={{
+              background:'#FAEEDA',padding:'10px 14px',
+              display:'flex',alignItems:'center',gap:8,borderBottom:'1px solid #EF9F27'
+            }}>
+              <CrownIcon/>
+              <span style={{fontSize:13,fontWeight:700,color:'#8a5c0a'}}>
+                3 Critics tagged this as great for dates
+              </span>
+            </div>
+            <div style={{padding:'12px 14px'}}>
+              <div className="chip-row">
+                <span className="chip chip-amber">Cosy and quiet</span>
+                <span className="chip chip-amber">Date night</span>
+                <span className="chip chip-amber">Local favourite</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Review with critic badge */}
+          <div style={{borderRadius:12,border:'1px solid rgba(0,0,0,.08)',padding:'13px 14px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+              <div style={{
+                width:34,height:34,borderRadius:'50%',background:'#e5e5e5',flexShrink:0,
+                display:'flex',alignItems:'center',justifyContent:'center',
+                fontWeight:700,color:'#525252',fontSize:15
+              }}>S</div>
+              <div style={{flex:1}}>
+                <div style={{
+                  fontSize:13,fontWeight:700,color:'#0A0A0A',
+                  display:'flex',alignItems:'center',gap:6,marginBottom:3
+                }}>
+                  Sara M.
+                  <span style={{
+                    display:'inline-flex',alignItems:'center',gap:3,
+                    padding:'2px 7px',borderRadius:9999,
+                    background:'#FAEEDA',border:'1px solid #EF9F27',
+                    fontSize:10,fontWeight:700,color:'#8a5c0a'
+                  }}>
+                    <CrownIcon size={9}/>Critic
+                  </span>
+                </div>
+                <div style={{fontSize:11,color:'rgba(0,0,0,.4)'}}>NeoTaste Local · ★★★★☆</div>
+              </div>
+            </div>
+            <p style={{fontSize:13,color:'rgba(0,0,0,.62)',lineHeight:1.5}}>
+              "Incredible atmosphere, the kind of place you find before everyone else does."
+            </p>
+          </div>
+        </div>
+
+        {/* Later that day tap target */}
+        <button
+          onClick={()=>go(2)}
+          style={{
+            display:'block',width:'100%',padding:'28px 20px 44px',
+            background:'transparent',border:'none',cursor:'pointer',
+            textAlign:'center',color:'#b8b8b8',fontSize:13,fontStyle:'italic',
+            WebkitTapHighlightColor:'transparent'
+          }}
+        >
+          Later that day...
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ── MAP VIEW (shared by S2 + S8 payoff) ─────────────── */
+function MapView({haflaLabel,tanukiLabel,tanukiPulse,onTanukiTap,showTooltipInit,showHint,footer}){
+  const [tooltip,setTooltip]=useState(!!showTooltipInit);
+  useEffect(()=>{
+    if(!showTooltipInit) return;
+    const t=setTimeout(()=>setTooltip(false),2200);
+    return()=>clearTimeout(t);
+  },[]);
+
+  const stdPins=[[8,12],[72,8],[88,30],[6,58],[80,65],[38,80]];
+  const haflaPos=[18,22];
+  const tanukiPos=[52,48];
+
+  return(
+    <div className="phone">
+      <StatusBar/>
+      {/* Filter bar */}
+      <div style={{background:'#fff',padding:'10px 16px 12px',flexShrink:0,boxShadow:'0 1px 0 rgba(0,0,0,.08)'}}>
+        <div style={{background:'#F5F5F5',borderRadius:9999,padding:'10px 14px',display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <circle cx="6.5" cy="6.5" r="5.5" stroke="#a3a3a3" strokeWidth="1.5"/>
+            <path d="M10.5 10.5L13.5 13.5" stroke="#a3a3a3" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+          <span style={{fontSize:14,color:'#a3a3a3',fontWeight:500}}>Search deals & more</span>
+        </div>
+        <div style={{display:'flex',gap:7}}>
+          {['⚙ Filters','⏱ Now','🍽 Cuisine','↕ Sort'].map(f=>(
+            <span key={f} style={{padding:'6px 12px',borderRadius:9999,background:'#F5F5F5',border:'1px solid rgba(0,0,0,.10)',fontSize:12,fontWeight:600,color:'#404040',whiteSpace:'nowrap',cursor:'pointer'}}>{f}</span>
+          ))}
+        </div>
+      </div>
+      {/* Map area */}
+      <div className="map-bg">
+        {[18,36,54,72].map(t=>(<div key={`h${t}`} className="map-road-h" style={{top:`${t}%`}}/>))}
+        {[25,50,75].map(l=>(<div key={`v${l}`} className="map-road-v" style={{left:`${l}%`}}/>))}
+        <div style={{position:'absolute',top:0,left:'30%',width:3,height:'100%',background:'rgba(255,255,255,.45)',transform:'rotate(25deg)',transformOrigin:'top center',pointerEvents:'none'}}/>
+        {/* Standard pins */}
+        {stdPins.map(([l,t],i)=>(
+          <div key={i} style={{position:'absolute',left:`${l}%`,top:`${t}%`,transform:'translate(-50%,-100%)',pointerEvents:'none'}}>
+            <StdPin/>
+          </div>
+        ))}
+        {/* Hafla Hafla critic pin — always has label */}
+        <div style={{position:'absolute',left:`${haflaPos[0]}%`,top:`${haflaPos[1]}%`,pointerEvents:'none'}}>
+          <div style={{display:'flex',alignItems:'flex-end',gap:6,transform:'translate(-13px,-100%)'}}>
+            <CriticPin/>
+            {haflaLabel&&(
+              <div style={{background:'#fff',borderRadius:8,padding:'5px 9px',boxShadow:'0 2px 10px rgba(0,0,0,.16)',display:'flex',alignItems:'center',gap:6,whiteSpace:'nowrap',border:'1px solid rgba(0,0,0,.06)',marginBottom:4}}>
+                <div style={{width:20,height:20,borderRadius:'50%',background:'#e5e5e5',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'#525252'}}>S</div>
+                <span style={{fontSize:11,fontWeight:600,color:'#0A0A0A'}}>First tasted by Sara.</span>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Tanuki Ramen critic pin */}
+        <div
+          onClick={onTanukiTap||undefined}
+          style={{position:'absolute',left:`${tanukiPos[0]}%`,top:`${tanukiPos[1]}%`,cursor:onTanukiTap?'pointer':'default',zIndex:10}}
+        >
+          <div style={{display:'flex',alignItems:'flex-end',gap:6,transform:'translate(-13px,-100%)'}}>
+            <CriticPin pulse={tanukiPulse}/>
+            {tanukiLabel&&(
+              <div style={{background:'#fff',borderRadius:8,padding:'5px 9px',boxShadow:'0 2px 10px rgba(0,0,0,.16)',display:'flex',alignItems:'center',gap:6,whiteSpace:'nowrap',border:'1px solid rgba(0,0,0,.06)',marginBottom:4}}>
+                <div style={{width:20,height:20,borderRadius:'50%',background:'#4ADE80',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'#1a3a1a'}}>T</div>
+                <span style={{fontSize:11,fontWeight:600,color:'#0A0A0A'}}>First tasted by Tobi.</span>
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Tooltip (auto-fades, S2 only) */}
+        {tooltip&&(
+          <div style={{position:'absolute',left:`${tanukiPos[0]}%`,top:`calc(${tanukiPos[1]}% - 90px)`,transform:'translateX(-50%)',background:'#fff',borderRadius:8,padding:'6px 10px',boxShadow:'0 4px 16px rgba(0,0,0,.18)',fontSize:12,fontWeight:600,color:'#0A0A0A',whiteSpace:'nowrap',zIndex:20,animation:'tooltipFade 2.2s ease forwards',pointerEvents:'none'}}>
+            <span style={{color:'#1a3a1a',marginRight:4}}>✦ New</span>
+            <span style={{color:'#a3a3a3'}}>· No reviews yet</span>
+            <div style={{position:'absolute',bottom:-5,left:'50%',width:10,height:10,background:'#fff',borderRadius:1,boxShadow:'2px 2px 4px rgba(0,0,0,.08)',transform:'translateX(-50%) rotate(45deg)'}}/>
+          </div>
+        )}
+        {/* Continue hint (S2 only) */}
+        {showHint&&(
+          <div style={{position:'absolute',bottom:16,left:'50%',transform:'translateX(-50%)',background:'rgba(26,58,26,.85)',borderRadius:9999,padding:'8px 16px',fontSize:12,fontWeight:600,color:'rgba(255,255,255,.85)',whiteSpace:'nowrap',pointerEvents:'none'}}>
+            Tap the amber pin to continue
+          </div>
+        )}
+        {/* Footer text (S8 payoff only) */}
+        {footer&&(
+          <div style={{position:'absolute',bottom:16,left:0,right:0,textAlign:'center'}}>
+            <button onClick={footer.onTap} style={{background:'transparent',border:'none',cursor:'pointer',fontSize:13,fontWeight:500,color:'rgba(0,0,0,.4)',letterSpacing:'.1px'}}>
+              {footer.text}
+            </button>
+          </div>
+        )}
+      </div>
+      <MapTabBar/>
+    </div>
+  );
+}
+
+/* ── SCREEN 2 — Discovery Map ─────────────────────────── */
+function S2({go}){
+  return(
+    <MapView
+      haflaLabel={true}
+      tanukiLabel={false}
+      tanukiPulse={true}
+      onTanukiTap={()=>go(3)}
+      showTooltipInit={true}
+      showHint={true}
+      footer={null}
+    />
+  );
+}
+
+/* ── SCREEN 3 — Lock Screen ───────────────────────────── */
+function S3({go}){
+  return(
+    <div className="phone" style={{background:'#1a3a1a',cursor:'pointer'}} onClick={()=>go(4)}>
+      <StatusBar light/>
+      <div className="scroll" style={{alignItems:'center',padding:'20px 20px 40px'}}>
+        <div style={{textAlign:'center',marginTop:32,marginBottom:8}}>
+          <div style={{color:'rgba(255,255,255,.6)',fontSize:17,fontWeight:500,marginBottom:6}}>Monday, June 6</div>
+          <div style={{fontSize:88,fontWeight:200,color:'#fff',letterSpacing:-5,lineHeight:1}}>9:41</div>
+        </div>
+        <div style={{
+          width:'100%',marginTop:36,
+          background:'rgba(255,255,255,.12)',backdropFilter:'blur(16px)',
+          WebkitBackdropFilter:'blur(16px)',border:'1px solid rgba(255,255,255,.18)',
+          borderRadius:20,padding:'14px 16px',display:'flex',gap:12,alignItems:'flex-start'
+        }}>
+          <div style={{
+            width:46,height:46,borderRadius:12,flexShrink:0,background:'#4ADE80',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            fontWeight:900,fontSize:22,color:'#1a3a1a'
+          }}>N</div>
+          <div style={{flex:1}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:3}}>
+              <span style={{fontSize:13,fontWeight:700,color:'#fff'}}>NeoTaste</span>
+              <span style={{fontSize:12,color:'rgba(255,255,255,.45)'}}>now</span>
+            </div>
+            <div style={{fontSize:15,fontWeight:700,color:'#fff',marginBottom:3}}>Before anyone else.</div>
+            <div style={{fontSize:13,color:'rgba(255,255,255,.7)',lineHeight:1.45}}>
+              A new restaurant just opened, and your name came up first.
+            </div>
+          </div>
+        </div>
+        <div style={{marginTop:'auto',paddingTop:60,color:'rgba(255,255,255,.25)',fontSize:12,textAlign:'center',letterSpacing:.3}}>
+          Tap to open
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── SCREEN 4 — Mission Invite ────────────────────────── */
+function S4({go}){
+  return(
+    <div className="phone">
+      <StatusBar/>
+      <div className="scroll">
+        <div style={{padding:'12px 20px 36px',flex:1}}>
+          <BackBtn onClick={()=>go(3)}/>
+          <div style={{marginTop:22,marginBottom:22}}><AmberBadge/></div>
+          <h1 className="h1" style={{marginBottom:18}}>This one's empty.</h1>
+          <p className="body" style={{marginBottom:28}}>
+            A new restaurant just opened in your city. No photos. No reviews. No reputation yet.
+            We're giving you the first look. If you go, your name becomes the first thing people see — and it stays there.
+          </p>
+          <div style={{
+            background:'#F5F5F5',borderRadius:14,padding:'14px 16px',
+            display:'flex',gap:14,alignItems:'center',marginBottom:20
+          }}>
+            <div style={{
+              width:60,height:60,borderRadius:10,flexShrink:0,
+              background:'linear-gradient(135deg,#c8956a,#9a6040)',
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:28
+            }}>🍜</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:16,fontWeight:800,color:'#0A0A0A',marginBottom:5}}>Tanuki Ramen</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {['Japanese','Ramen'].map(t=>(
+                  <span key={t} style={{
+                    fontSize:12,fontWeight:600,padding:'3px 9px',
+                    borderRadius:9999,background:'rgba(0,0,0,.07)',color:'#525252'
+                  }}>{t}</span>
+                ))}
+                <span style={{
+                  fontSize:12,fontWeight:700,padding:'3px 9px',
+                  borderRadius:9999,background:'#1a3a1a',color:'#4ADE80'
+                }}>✦ New</span>
+              </div>
+            </div>
+          </div>
+          <div className="amber-banner" style={{marginBottom:28}}>
+            👑 &nbsp;<strong>First impression. Permanent credit.</strong>
+          </div>
+          <button className="btn btn-dark" style={{marginBottom:10}} onClick={()=>go(5)}>
+            Open the door →
+          </button>
+          <button className="btn-ghost" onClick={()=>go(3)}>Not yet</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── SCREEN 5 — Booking Confirmation ─────────────────── */
+function S5({go}){
+  return(
+    <div className="phone">
+      <StatusBar/>
+      <div className="scroll">
+        <div style={{padding:'40px 24px 40px',flex:1,display:'flex',flexDirection:'column',alignItems:'center'}}>
+          <div style={{
+            width:84,height:84,borderRadius:'50%',background:'#4ADE80',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            marginBottom:28,flexShrink:0
+          }}>
+            <svg width="40" height="30" viewBox="0 0 40 30" fill="none">
+              <path d="M3 15L14 26L37 3" stroke="#1a3a1a" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <h1 className="h1" style={{textAlign:'center',marginBottom:18}}>It's yours now.</h1>
+          <p className="body" style={{textAlign:'center',marginBottom:28}}>
+            Your name is reserved for this spot. No one else can take the first impression.
+            Go when you're ready — visit, eat, leave your review. We'll handle the rest.
+          </p>
+          <div className="amber-banner" style={{width:'100%',marginBottom:32,textAlign:'left'}}>
+            🔔 &nbsp;We'll remind you on the day. Your spot is held — don't let it go to someone else.
+          </div>
+          <button className="btn btn-dark" style={{width:'100%'}} onClick={()=>go(6)}>
+            Leave your review →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── SCREEN 6 — Critic Review ─────────────────────────── */
+const QUESTIONS=[
+  {id:'best',label:"What's it best for?",opts:['Solo lunch','Date night','Group dinner','Quick bite']},
+  {id:'vibes',label:'Vibes',opts:['Cosy and quiet','Social and fun','Cool discovery','Chill','Great for dates','Local favourite']},
+  {id:'back',label:'Would you come back?',opts:['Yes without a doubt','Yes if the deal is on','Probably not','No']},
+];
+
+function S6({go}){
+  const [picks,setPicks]=useState([null,null,null]);
+  const [visible,setVisible]=useState(1);
+  const bottomRef=useRef(null);
+
+  function pick(qi,opt){
+    if(picks[qi]!==null) return;
+    const next=[...picks];next[qi]=opt;setPicks(next);
+    if(qi+1<QUESTIONS.length){
+      setVisible(v=>Math.max(v,qi+2));
+      setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:'smooth',block:'nearest'}),80);
+    }
+  }
+  const allDone=picks.every(p=>p!==null);
+
+  return(
+    <div className="phone">
+      <div style={{padding:'14px 20px 14px',borderBottom:'1px solid rgba(0,0,0,.07)',background:'#fff',flexShrink:0}}>
+        <StatusBar/>
+        <div style={{marginTop:12}}><AmberBadge/></div>
+      </div>
+      <div className="scroll">
+        <div style={{padding:'22px 20px 40px'}}>
+          <h2 style={{fontSize:26,fontWeight:800,color:'#0A0A0A',lineHeight:1.2,letterSpacing:'-0.3px',marginBottom:28}}>
+            You're the first.<br/>Make it count.
+          </h2>
+          {QUESTIONS.map((q,qi)=>{
+            if(qi>=visible) return null;
+            const answered=picks[qi]!==null;
+            return(
+              <div key={q.id} style={{marginBottom:24}}>
+                <div style={{fontSize:15,fontWeight:700,color:'#0A0A0A',marginBottom:10,display:'flex',alignItems:'center',gap:8}}>
+                  <span style={{
+                    width:22,height:22,borderRadius:'50%',
+                    background:answered?'#4ADE80':'#f0f0f0',
+                    color:answered?'#1a3a1a':'#a3a3a3',
+                    display:'inline-flex',alignItems:'center',justifyContent:'center',
+                    fontSize:12,fontWeight:800,flexShrink:0
+                  }}>{answered?'✓':qi+1}</span>
+                  {q.label}
+                </div>
+                {answered?(
+                  <div className="chip-row">
+                    <span className="chip chip-amber">✓ {picks[qi]}</span>
+                  </div>
+                ):(
+                  <div className="chip-row">
+                    {q.opts.map(opt=>(
+                      <button key={opt} onClick={()=>pick(qi,opt)} className="chip">{opt}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {allDone&&(
+            <div ref={bottomRef}>
+              <div className="amber-banner" style={{marginBottom:18}}>
+                👑 &nbsp;Your review will be pinned as the first entry on Tanuki Ramen's profile.
+              </div>
+              <button className="btn btn-dark" onClick={()=>go(7)}>
+                Submit — place my name on the map
+              </button>
+            </div>
+          )}
+          {!allDone&&<div ref={bottomRef}/>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── SCREEN 7 — Champagne ─────────────────────────────── */
+function S7({go}){
+  const [key,setKey]=useState(0);
+  useEffect(()=>{setKey(k=>k+1);},[]);
+  return(
+    <div className="phone" style={{background:'#1a3a1a',cursor:'pointer'}} onClick={()=>go(8)}>
+      <StatusBar light/>
+      <div className="scroll" style={{alignItems:'center',justifyContent:'center',textAlign:'center',padding:'40px 32px'}}>
+        <div style={{position:'relative',marginBottom:36,fontSize:72,lineHeight:1}}>
+          <span key={`l${key}`} className="glass-l">🥂</span>
+          <span key={`r${key}`} className="glass-r" style={{marginLeft:4}}>🥂</span>
+          {[{top:'-10px',left:'40px',delay:'.5s'},{top:'10px',right:'20px',delay:'.7s'},{top:'-18px',right:'50px',delay:'.6s'}].map((s,i)=>(
+            <span key={i} className="sparkle" style={{top:s.top,left:s.left,right:s.right,animationDelay:s.delay,animationDuration:'1.2s'}}>✦</span>
+          ))}
+        </div>
+        <p key={`t1${key}`} className="fade-line1" style={{fontSize:28,fontWeight:800,color:'#fff',lineHeight:1.2,letterSpacing:'-0.4px',marginBottom:14}}>
+          You're officially part of NeoTaste history.
+        </p>
+        <p key={`t2${key}`} className="fade-line2" style={{fontSize:18,fontWeight:600,color:'rgba(255,255,255,.6)',lineHeight:1.5}}>
+          First reviewer at Tanuki Ramen.
+        </p>
+        <div style={{marginTop:60,color:'rgba(255,255,255,.2)',fontSize:12,letterSpacing:.3}}>Tap to see the result</div>
+      </div>
+    </div>
+  );
+}
+
+/* ── SCREEN 8 — Map Payoff ────────────────────────────── */
+function S8Map({go}){
+  return(
+    <MapView
+      haflaLabel={true}
+      tanukiLabel={true}
+      tanukiPulse={false}
+      onTanukiTap={null}
+      showTooltipInit={false}
+      showHint={false}
+      footer={{text:'See what changed →',onTap:()=>go(9)}}
+    />
+  );
+}
+
+/* ── SCREEN 9 — Restaurant Before / After ─────────────── */
+function S9(){
+  const [view,setView]=useState('after');
+  const isBefore=view==='before';
+  return(
+    <div className="phone">
+      <StatusBar/>
+      <div style={{padding:'10px 20px 6px',background:'#fff',borderBottom:'1px solid rgba(0,0,0,.06)',flexShrink:0}}>
+        <div style={{display:'flex',gap:6,background:'#f0f0f0',borderRadius:9999,padding:4}}>
+          {['before','after'].map(v=>(
+            <button key={v} onClick={()=>setView(v)} style={{
+              flex:1,padding:'9px 0',borderRadius:9999,border:'none',cursor:'pointer',
+              fontWeight:700,fontSize:14,
+              background:view===v?'#1a3a1a':'transparent',
+              color:view===v?'#fff':'#737373',
+            }}>{v==='before'?'Before':'After'}</button>
+          ))}
+        </div>
+      </div>
+      <div className="scroll">
+        <div style={{
+          width:'100%',height:196,flexShrink:0,
+          background:isBefore?'linear-gradient(135deg,#c8b89a,#a89278)':'linear-gradient(135deg,#c8956a,#9a6040)',
+          display:'flex',alignItems:'center',justifyContent:'center',fontSize:72,
+          filter:isBefore?'grayscale(60%) brightness(.9)':'none'
+        }}>🍜</div>
+        <div style={{padding:'16px 20px 40px'}}>
+          <div style={{marginBottom:14}}>
+            <h1 style={{fontSize:22,fontWeight:800,color:'#0A0A0A',marginBottom:6}}>Tanuki Ramen</h1>
+            {!isBefore&&(
+              <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:9}}>
+                <span className="stars">★★★★</span>
+                <span style={{fontSize:13,color:'rgba(0,0,0,.45)'}}>½</span>
+                <span style={{fontSize:14,fontWeight:700,color:'#0A0A0A'}}>4.5</span>
+                <span style={{fontSize:13,color:'rgba(0,0,0,.4)'}}>(129 reviews)</span>
+              </div>
+            )}
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              {['🍜 Japanese','Ramen'].map(t=>(
+                <span key={t} style={{fontSize:12,fontWeight:600,padding:'4px 10px',borderRadius:9999,background:'rgba(0,0,0,.07)',color:'#525252'}}>{t}</span>
+              ))}
+              <span style={{fontSize:12,fontWeight:700,padding:'4px 10px',borderRadius:9999,background:'#1a3a1a',color:'#4ADE80'}}>✦ New</span>
+            </div>
+          </div>
+          <div className="div"/>
+          {isBefore?(
+            <div>
+              <div style={{fontSize:17,fontWeight:700,color:'#0A0A0A',marginBottom:16}}>Reviews</div>
+              <div style={{textAlign:'center',padding:'36px 20px',background:'#fafafa',borderRadius:14,border:'1px solid rgba(0,0,0,.07)'}}>
+                <div style={{fontSize:36,marginBottom:12}}>🫙</div>
+                <div style={{fontSize:15,fontWeight:700,color:'#737373',marginBottom:5}}>No reviews yet.</div>
+                <div style={{fontSize:13,color:'#a3a3a3'}}>Be the first to visit and leave your mark.</div>
+              </div>
+            </div>
+          ):(
+            <div>
+              <div style={{fontSize:17,fontWeight:700,color:'#0A0A0A',marginBottom:14}}>Reviews</div>
+              <div className="card-amber" style={{marginBottom:14}}>
+                <div style={{background:'#FAEEDA',padding:'9px 14px',display:'flex',alignItems:'center',gap:8,borderBottom:'1px solid #EF9F27'}}>
+                  <CrownIcon/>
+                  <span style={{fontSize:12,fontWeight:800,color:'#8a5c0a',letterSpacing:'.2px'}}>First taste by Tobi</span>
+                </div>
+                <div style={{padding:'14px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
+                    <div style={{width:38,height:38,borderRadius:'50%',background:'#4ADE80',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:800,fontSize:16,color:'#1a3a1a',flexShrink:0}}>T</div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:14,fontWeight:700,color:'#0A0A0A',marginBottom:3}}>Tobi K.</div>
+                      <span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:9999,background:'#4ADE80',color:'#1a3a1a'}}>NeoTaste Local</span>
+                    </div>
+                    <div style={{color:'#1a3a1a',fontSize:14,letterSpacing:1}}>★★★★★</div>
+                  </div>
+                  <p style={{fontSize:13,color:'rgba(0,0,0,.65)',lineHeight:1.55,marginBottom:12}}>
+                    "The broth hit immediately — complex, rich, exactly what great ramen should be. Atmosphere made it the perfect date spot."
+                  </p>
+                  <div className="chip-row">
+                    <span className="chip chip-amber">🕯️ Great for dates</span>
+                    <span className="chip chip-amber">🍶 Cosy and quiet</span>
+                    <span className="chip chip-amber">✦ Cool discovery</span>
+                  </div>
+                  <div className="div" style={{margin:'14px 0 10px'}}/>
+                  <div style={{display:'flex',alignItems:'center',gap:16}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:12,fontWeight:700,color:'#0A0A0A',marginBottom:4}}>Would go back</div>
+                      <div className="stat-track"><div className="stat-fill" style={{width:'100%'}}/></div>
+                    </div>
+                    <div style={{fontSize:22,fontWeight:800,color:'#1a3a1a'}}>100%</div>
+                  </div>
+                </div>
+              </div>
+              <div style={{borderRadius:12,border:'1px solid rgba(0,0,0,.08)',padding:'13px 14px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                  <div style={{width:34,height:34,borderRadius:'50%',background:'#e5e5e5',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,color:'#525252'}}>M</div>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:700}}>Marcus H.</div>
+                    <div style={{fontSize:11,color:'rgba(0,0,0,.4)'}}>3 weeks ago · ★★★★☆</div>
+                  </div>
+                </div>
+                <p style={{fontSize:13,color:'rgba(0,0,0,.62)',lineHeight:1.5}}>"Solid ramen, great spot for a quick solo lunch. Bold broth, generous portions."</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── APP ──────────────────────────────────────────────── */
+function App(){
+  const [s,setS]=useState(1);
+  const map={
+    1:<S1 go={setS}/>,2:<S2 go={setS}/>,3:<S3 go={setS}/>,
+    4:<S4 go={setS}/>,5:<S5 go={setS}/>,6:<S6 go={setS}/>,
+    7:<S7 go={setS}/>,8:<S8Map go={setS}/>,9:<S9 go={setS}/>,
+  };
+  return(
+    <>
+      {map[s]}
+      <div className="nav-dots">
+        {[1,2,3,4,5,6,7,8,9].map(n=>(
+          <button key={n} className={`dot ${s===n?'on':''}`} onClick={()=>setS(n)}/>
+        ))}
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
